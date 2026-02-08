@@ -7,11 +7,6 @@ export function useGrammarPoints(filters = {}) {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
-  const level = filters.level || null;
-  const week = filters.week || null;
-  const day = filters.day || null;
-  const groupId = filters.groupId || null;
-
   useEffect(() => {
     async function fetch() {
       setLoading(true);
@@ -22,10 +17,10 @@ export function useGrammarPoints(filters = {}) {
         .order('day', { ascending: true })
         .order('sort_order', { ascending: true });
 
-      if (level) query = query.eq('jlpt_level', level);
-      if (week) query = query.eq('week', week);
-      if (day) query = query.eq('day', day);
-      if (groupId) query = query.eq('group_id', groupId);
+      if (filters.week) query = query.eq('week', filters.week);
+      if (filters.day) query = query.eq('day', filters.day);
+      if (filters.groupId) query = query.eq('group_id', filters.groupId);
+      if (filters.jlptLevel) query = query.eq('jlpt_level', filters.jlptLevel);
 
       const { data: result, error: err } = await query;
       if (err) setError(err);
@@ -33,34 +28,30 @@ export function useGrammarPoints(filters = {}) {
       setLoading(false);
     }
     fetch();
-  }, [level, week, day, groupId]);
+  }, [filters.week, filters.day, filters.groupId, filters.jlptLevel]);
 
   return { data, loading, error };
 }
 
-// ─── Fetch grammar groups (with optional level filter) ───────────
-export function useGrammarGroups(level = null) {
+// ─── Fetch grammar groups ────────────────────────────────────────
+export function useGrammarGroups() {
   const [groups, setGroups] = useState([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     async function fetch() {
-      setLoading(true);
-      let query = supabase
+      const { data, error } = await supabase
         .from('japanese_grammer_groups')
         .select('*')
         .order('week', { ascending: true })
         .order('day', { ascending: true })
         .order('sort_order', { ascending: true });
 
-      if (level) query = query.eq('jlpt_level', level);
-
-      const { data, error } = await query;
       if (!error) setGroups(data || []);
       setLoading(false);
     }
     fetch();
-  }, [level]);
+  }, []);
 
   return { groups, loading };
 }
@@ -86,8 +77,8 @@ export function useConjunctions() {
   return { data, loading };
 }
 
-// ─── Fetch quiz questions (with optional level filter via group) ─
-export function useQuizQuestions(groupId = null, level = null) {
+// ─── Fetch quiz questions ────────────────────────────────────────
+export function useQuizQuestions(groupId = null) {
   const [data, setData] = useState([]);
   const [loading, setLoading] = useState(true);
 
@@ -96,26 +87,17 @@ export function useQuizQuestions(groupId = null, level = null) {
       setLoading(true);
       let query = supabase
         .from('japanese_grammer_quiz_questions')
-        .select('*, japanese_grammer_groups(jlpt_level)')
+        .select('*')
         .order('id', { ascending: true });
 
       if (groupId) query = query.eq('group_id', groupId);
 
       const { data: result, error } = await query;
-      if (!error) {
-        let filtered = result || [];
-        // Filter by level if specified (through the group's jlpt_level)
-        if (level && !groupId) {
-          filtered = filtered.filter(q =>
-            q.japanese_grammer_groups?.jlpt_level === level
-          );
-        }
-        setData(filtered);
-      }
+      if (!error) setData(result || []);
       setLoading(false);
     }
     fetch();
-  }, [groupId, level]);
+  }, [groupId]);
 
   return { data, loading };
 }

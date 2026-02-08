@@ -3,7 +3,7 @@ import { useGrammarPoints, useGrammarGroups } from '../hooks/useGrammar';
 import LoadingSpinner from '../components/LoadingSpinner';
 import { C, S } from '../lib/styles';
 
-// ─── Comparison Table ────────────────────────────────────────────
+// ─── Comparison Table (inline) ───────────────────────────────────
 function ComparisonTable({ groupId, grammarData, grammarGroups }) {
   const items = grammarData.filter(g => g.group_id === groupId);
   const group = grammarGroups.find(g => g.id === groupId);
@@ -96,28 +96,15 @@ function ComparisonTable({ groupId, grammarData, grammarGroups }) {
 }
 
 // ─── Main Grammar Page ───────────────────────────────────────────
-export default function GrammarPage({ level }) {
-  const { data: grammarData, loading } = useGrammarPoints({ level });
-  const { groups: grammarGroups } = useGrammarGroups(level);
+export default function GrammarPage() {
+  const { data: grammarData, loading } = useGrammarPoints();
+  const { groups: grammarGroups } = useGrammarGroups();
   const [search, setSearch] = useState('');
   const [viewMode, setViewMode] = useState('compare');
   const [selectedDay, setSelectedDay] = useState(null);
   const [expanded, setExpanded] = useState(null);
 
   if (loading) return <LoadingSpinner message="Loading grammar..." />;
-
-  if (grammarData.length === 0) {
-    return (
-      <div style={{ textAlign: 'center', padding: '60px 20px' }}>
-        <p style={{ fontSize: '48px', margin: '0 0 16px' }}>📭</p>
-        <p style={{ fontSize: '18px', fontWeight: 600, color: C.dark, margin: '0 0 8px' }}>No {level} grammar data yet</p>
-        <p style={{ fontSize: '14px', color: C.textMid, lineHeight: 1.6 }}>
-          Add grammar points via SQL in Supabase with<br />
-          <code style={{ background: '#EDE6DC', padding: '2px 8px', borderRadius: '4px', fontSize: '13px' }}>jlpt_level = '{level}'</code>
-        </p>
-      </div>
-    );
-  }
 
   const days = [...new Set(grammarData.map(g => g.day))].sort();
 

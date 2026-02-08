@@ -2,7 +2,6 @@ import { useState } from 'react';
 import { useAuth } from './hooks/useAuth';
 import Auth from './components/Auth';
 import Layout from './components/Layout';
-import LevelSelector from './components/LevelSelector';
 import LoadingSpinner from './components/LoadingSpinner';
 import GrammarPage from './pages/GrammarPage';
 import QuizPage from './pages/QuizPage';
@@ -12,8 +11,8 @@ import ProgressPage from './pages/ProgressPage';
 export default function App() {
   const { session, loading, signIn, signOut } = useAuth();
   const [activeTab, setActiveTab] = useState('grammar');
-  const [selectedLevel, setSelectedLevel] = useState(null); // null = show level selector
 
+  // Show loading while checking auth
   if (loading) {
     return (
       <div style={{
@@ -28,27 +27,22 @@ export default function App() {
     );
   }
 
+  // Show login if not authenticated
   if (!session) {
     return <Auth onSignIn={signIn} />;
   }
 
-  // Show level selector if no level chosen
-  if (!selectedLevel) {
-    return <LevelSelector onSelect={setSelectedLevel} onSignOut={signOut} />;
-  }
-
+  // Main app
   return (
     <Layout
       activeTab={activeTab}
       onTabChange={setActiveTab}
       onSignOut={signOut}
-      selectedLevel={selectedLevel}
-      onBackToLevels={() => setSelectedLevel(null)}
     >
-      {activeTab === 'grammar' && <GrammarPage level={selectedLevel} />}
-      {activeTab === 'quiz' && <QuizPage level={selectedLevel} />}
-      {activeTab === 'cards' && <CardsPage level={selectedLevel} />}
-      {activeTab === 'progress' && <ProgressPage level={selectedLevel} />}
+      {activeTab === 'grammar' && <GrammarPage />}
+      {activeTab === 'quiz' && <QuizPage />}
+      {activeTab === 'cards' && <CardsPage />}
+      {activeTab === 'progress' && <ProgressPage />}
     </Layout>
   );
 }

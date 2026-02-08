@@ -6,9 +6,9 @@ import LoadingSpinner from '../components/LoadingSpinner';
 import { MARKING } from '../lib/constants';
 import { C, S } from '../lib/styles';
 
-export default function ProgressPage({ level }) {
-  const { data: grammarData, loading: grammarLoading } = useGrammarPoints({ level });
-  const { groups: grammarGroups } = useGrammarGroups(level);
+export default function ProgressPage() {
+  const { data: grammarData, loading: grammarLoading } = useGrammarPoints();
+  const { groups: grammarGroups } = useGrammarGroups();
   const { marks, getStats, loading: marksLoading, getMarkLevel } = useCardMarks();
   const { history, fetchHistory, loading: historyLoading } = useQuizResults();
   const { streak, weekDays, fetchStreak } = useStreak();
@@ -20,20 +20,11 @@ export default function ProgressPage({ level }) {
 
   if (grammarLoading || marksLoading) return <LoadingSpinner message="Loading stats..." />;
 
-  if (grammarData.length === 0) {
-    return (
-      <div style={{ textAlign: 'center', padding: '60px 20px' }}>
-        <p style={{ fontSize: '48px', margin: '0 0 16px' }}>📭</p>
-        <p style={{ fontSize: '18px', fontWeight: 600, color: C.dark, margin: '0 0 8px' }}>No {level} progress yet</p>
-        <p style={{ fontSize: '14px', color: C.textMid }}>Add grammar data and start studying to see your progress here.</p>
-      </div>
-    );
-  }
-
   const stats = getStats();
   const totalMarked = Object.values(stats).reduce((a, b) => a + b, 0);
   const needsReview = (stats[2] || 0) + (stats[3] || 0) + (stats[4] || 0) + (stats[5] || 0);
 
+  // Calculate quiz accuracy
   let quizAccuracy = 0;
   if (history.length > 0) {
     const totalCorrect = history.reduce((sum, h) => sum + h.correct_answers, 0);
@@ -41,6 +32,7 @@ export default function ProgressPage({ level }) {
     quizAccuracy = totalQuestions > 0 ? Math.round((totalCorrect / totalQuestions) * 100) : 0;
   }
 
+  // Calculate weekly progress
   const weekNumbers = [...new Set(grammarData.map(g => g.week))].sort();
   const weekProgress = weekNumbers.map(w => {
     const weekItems = grammarData.filter(g => g.week === w);
@@ -81,11 +73,20 @@ export default function ProgressPage({ level }) {
               <span style={{ fontSize: "13px", fontWeight: 600, color: C.dark }}>Week {w.week}</span>
             </div>
             <div style={{ flex: 1, height: "8px", borderRadius: "4px", background: "#EDE6DC", overflow: "hidden" }}>
-              <div style={{ height: "100%", width: `${w.progress}%`, background: w.progress === 100 ? C.green : `linear-gradient(90deg, ${C.gold}, ${C.textLight})`, borderRadius: "4px", transition: "width 0.4s ease" }} />
+              <div style={{
+                height: "100%",
+                width: `${w.progress}%`,
+                background: w.progress === 100 ? C.green : `linear-gradient(90deg, ${C.gold}, ${C.textLight})`,
+                borderRadius: "4px",
+                transition: "width 0.4s ease",
+              }} />
             </div>
             <span style={{ fontSize: "13px", fontWeight: 500, color: C.textLight, minWidth: "36px", textAlign: "right" }}>{w.progress}%</span>
           </div>
         ))}
+        {weekProgress.length === 0 && (
+          <p style={{ fontSize: "13px", color: C.textMid, textAlign: "center", padding: "16px 0" }}>No data yet — start studying!</p>
+        )}
       </div>
 
       {/* Group Mastery */}
@@ -114,6 +115,7 @@ export default function ProgressPage({ level }) {
             </div>
           );
         })}
+        {/* Legend */}
         <div style={{ display: "flex", gap: "10px", marginTop: "12px", flexWrap: "wrap", fontSize: "11px" }}>
           {Object.entries(MARKING).map(([k, m]) => (
             <span key={k} style={{ display: "inline-flex", alignItems: "center", gap: "3px", color: m.text }}>
@@ -131,15 +133,25 @@ export default function ProgressPage({ level }) {
           {history.slice(0, 5).map((h, i) => {
             const pct = Math.round((h.correct_answers / h.total_questions) * 100);
             return (
-              <div key={h.id || i} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "12px 0", borderBottom: `1px solid ${C.border}` }}>
+              <div key={h.id || i} style={{
+                display: "flex", justifyContent: "space-between", alignItems: "center",
+                padding: "12px 0", borderBottom: `1px solid ${C.border}`,
+              }}>
                 <div>
                   <p style={{ fontSize: "14px", fontWeight: 500, color: C.dark, margin: 0 }}>
-                    {h.quiz_mode === "group" ? "⚖ Similar" : "🎲 Mixed"} Quiz
+                    {h.quiz_mode === "group" ? "⚖ Similar Patterns" : "🎲 Mixed"} Quiz
                   </p>
-                  <p style={{ fontSize: "12px", color: C.textMid, margin: "2px 0 0" }}>{new Date(h.completed_at).toLocaleDateString()}</p>
+                  <p style={{ fontSize: "12px", color: C.textMid, margin: "2px 0 0" }}>
+                    {new Date(h.completed_at).toLocaleDateString()}
+                  </p>
                 </div>
                 <div style={{ textAlign: "right" }}>
-                  <p style={{ fontSize: "16px", fontWeight: 700, margin: 0, color: pct >= 80 ? C.green : pct >= 50 ? C.gold : C.red }}>{h.correct_answers}/{h.total_questions}</p>
+                  <p style={{
+                    fontSize: "16px", fontWeight: 700, margin: 0,
+                    color: pct >= 80 ? C.green : pct >= 50 ? C.gold : C.red,
+                  }}>
+                    {h.correct_answers}/{h.total_questions}
+                  </p>
                   <p style={{ fontSize: "11px", color: C.textMid, margin: 0 }}>{pct}%</p>
                 </div>
               </div>
@@ -152,8 +164,16 @@ export default function ProgressPage({ level }) {
       <div style={{ ...S.card, background: `linear-gradient(135deg, ${C.dark} 0%, ${C.darkAlt} 100%)`, color: C.bg }}>
         <p style={{ fontSize: "16px", fontWeight: 600, margin: "0 0 8px" }}>Study Streak</p>
         <div style={{ display: "flex", gap: "8px", marginBottom: "8px" }}>
-          {(weekDays.length > 0 ? weekDays : ["M", "T", "W", "T", "F", "S", "S"].map(d => ({ day: d, studied: false }))).map((d, i) => (
-            <div key={i} style={{ width: "32px", height: "32px", borderRadius: "50%", display: "flex", alignItems: "center", justifyContent: "center", fontSize: "11px", fontWeight: 600, background: d.studied ? C.gold : "rgba(196,168,130,0.2)", color: d.studied ? C.dark : C.textLight }}>{d.day}</div>
+          {(weekDays.length > 0 ? weekDays : ["M", "T", "W", "T", "F", "S", "S"].map((d, i) => ({
+            day: d, studied: false,
+          }))).map((d, i) => (
+            <div key={i} style={{
+              width: "32px", height: "32px", borderRadius: "50%",
+              display: "flex", alignItems: "center", justifyContent: "center",
+              fontSize: "11px", fontWeight: 600,
+              background: d.studied ? C.gold : "rgba(196,168,130,0.2)",
+              color: d.studied ? C.dark : C.textLight,
+            }}>{d.day}</div>
           ))}
         </div>
         <p style={{ fontSize: "13px", color: C.textMuted, margin: 0 }}>
@@ -161,7 +181,7 @@ export default function ProgressPage({ level }) {
         </p>
       </div>
 
-      {/* Marking Breakdown */}
+      {/* Marking Summary */}
       {totalMarked > 0 && (
         <div style={S.card}>
           <p style={{ fontSize: "16px", fontWeight: 600, color: C.dark, margin: "0 0 12px" }}>Marking Breakdown</p>
@@ -171,7 +191,12 @@ export default function ProgressPage({ level }) {
             const pct = totalMarked > 0 ? Math.round((count / totalMarked) * 100) : 0;
             return (
               <div key={k} style={{ display: "flex", alignItems: "center", gap: "10px", marginBottom: "10px" }}>
-                <span style={{ width: "28px", height: "28px", borderRadius: "50%", background: m.bg, color: "#fff", display: "flex", alignItems: "center", justifyContent: "center", fontSize: "13px", flexShrink: 0 }}>{m.icon}</span>
+                <span style={{
+                  width: "28px", height: "28px", borderRadius: "50%",
+                  background: m.bg, color: "#fff",
+                  display: "flex", alignItems: "center", justifyContent: "center",
+                  fontSize: "13px", flexShrink: 0,
+                }}>{m.icon}</span>
                 <div style={{ flex: 1 }}>
                   <div style={{ display: "flex", justifyContent: "space-between", marginBottom: "4px" }}>
                     <span style={{ fontSize: "13px", fontWeight: 500, color: m.text }}>{m.label}</span>
